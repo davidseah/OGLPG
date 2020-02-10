@@ -15,10 +15,10 @@ const char* vertexShaderSource =
 
 const char* fragmentShaderSource =
 "#version 330 core\n"
-"out vec4 FragColor\n"
+"out vec4 FragColor;\n"
 "void main()\n"
 "{\n"
-"   FragColo = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
+"   FragColor = vec4(1.0f, 0.5f, 0.2f, 1.0f);\n"
 "}\0";
 
 
@@ -54,16 +54,47 @@ int main()
 
 
 	float vertices[] = {
+		 0.5f,  0.5f, 0.0f,
+		 0.5f, -0.5f, 0.0f,
 		-0.5f, -0.5f, 0.0f,
-		0.5f, -0.5f, 0.0f,
-		0.0f, 0.5f, 0.0f
+		-0.5f,  0.5f, 0.0f
 	};
 
-	//Vertex Buffer Object (VBO)
-	unsigned int VBO;
-	glGenBuffers(1, &VBO);
+	unsigned int indices[] = {
+		0, 1, 3, //first triangle
+		1, 2, 3  //second triangle
+	};
 
+	//Vertex Buffer Object (VBO) and Vertex Array Object(VAO) and Element buffer object
+	unsigned int VBO, VAO, EBO;
+	glGenBuffers(1, &VBO);
+	glGenVertexArrays(1, &VAO);
+	glGenBuffers(1, &EBO);
+
+	//Initialization code(done once unless your object frequently changes)
+
+	// 1. bind vertex Array Object
+	glBindVertexArray(VAO);
+
+	// 2. copy our vertices array in a buffer for OpenGL to use
+	glBindBuffer(GL_ARRAY_BUFFER, VBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), vertices, GL_STATIC_DRAW);
+
+	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBO);
+	glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indices), indices, GL_STATIC_DRAW);
+
+	//The first parameter specifies which vertex attribute we want to configure. 
+	//Remember that we specified the location of the position vertex attribute 
+	//in the vertex shader with lauout (location = 0). This sets the location of the vertex attribute
+	//in the vertex attribute to 0 and since we want to pass dat to this vertex attribute, we pass in 0
+
+	//The last parameter is of type void* and this requires that weird cast. 
+	//This is the offset of where the position data begins in the buffer. 
+
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+
 
 	//compiling shader
 	//vertex Shader
@@ -120,32 +151,27 @@ int main()
 	glUseProgram(shaderProgram);
 
 
-	//The first parameter specifies which vertex attribute we want to configure. 
-	//Remember that we specified the location of the position vertex attribute 
-	//in the vertex shader with lauout (location = 0). This sets the location of the vertex attribute
-	//in the vertex attribute to 0 and since we want to pass dat to this vertex attribute, we pass in 0
-
-	//The last parameter is of type void* and this requires that weird cast. 
-	//This is the offset of where the position data begins in the buffer. 
-
-	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FLAE, 3 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(0);
-	
-
-
-
-
 	glfwSetFramebufferSizeCallback(window, framebuffer_size_callback);
 	while(!glfwWindowShouldClose(window))
 	{
 		glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 		glClear(GL_COLOR_BUFFER_BIT);
 
+		//wireframe mood
+		glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+
 		//input
 		processInput(window);
 
 		//rendering commands here
+		glUseProgram(shaderProgram);
+		glBindVertexArray(VAO);
 
+		#ifdef GLDRAWARRAY
+		glDrawArrays(GL_TRIANGLES, 0, 3);
+		#endif
+
+		glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 		//check and call everntws and swap the buffers
 		glfwSwapBuffers(window);
 		glfwPollEvents();
